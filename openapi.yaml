@@ -1,0 +1,100 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /helloworld/{name}:
+        get:
+            tags:
+                - Greeter
+            description: Sends a greeting
+            operationId: Greeter_SayHello
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/helloworld.v1.HelloReply'
+    /wallet/transaction:
+        post:
+            tags:
+                - Wallet
+            operationId: Wallet_SendTransaction
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/wallet.v1.TxRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.TxReply'
+    /wallet/{account}:
+        get:
+            tags:
+                - Wallet
+            operationId: Wallet_GetBalance
+            parameters:
+                - name: account
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.BalanceReply'
+components:
+    schemas:
+        helloworld.v1.HelloReply:
+            type: object
+            properties:
+                message:
+                    type: string
+            description: The response message containing the greetings
+        wallet.v1.BalanceReply:
+            type: object
+            properties:
+                account:
+                    type: string
+                balance:
+                    type: string
+                pendingBalance:
+                    type: string
+        wallet.v1.TxReply:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+        wallet.v1.TxRequest:
+            type: object
+            properties:
+                senderAccount:
+                    type: string
+                password:
+                    type: string
+                recipientAccount:
+                    type: string
+tags:
+    - name: Greeter
+      description: The greeting service definition.
+    - name: Wallet

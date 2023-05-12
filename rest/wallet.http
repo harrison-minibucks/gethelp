@@ -1,0 +1,15 @@
+### Hello World sample
+GET http://localhost:8000/helloworld/your-name HTTP/1.1
+
+### Get Wallet Balance
+GET http://localhost:8000/wallet/0x929548598a3b93362c5aa2a24de190d18e657ae0 HTTP/1.1
+
+### Send Transaction (Demo ONLY)
+POST http://localhost:8000/wallet/transaction HTTP/1.1
+Content-Type: application/json
+
+{
+    "sender_account": "0x929548598a3b93362c5aa2a24de190d18e657ae0",
+    "password": "P@ssw0rd",
+    "recipient_account": "0xb02A2EdA1b317FBd16760128836B0Ac59B560e91"
+}
