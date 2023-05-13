@@ -6,7 +6,7 @@ import (
 )
 
 func NewEthClient(conf *conf.Config) *ethclient.Client {
-	cl, err := ethclient.Dial("\\\\.\\pipe\\geth.ipc")
+	cl, err := ethclient.Dial(conf.EthNodeConnection)
 	if err != nil {
 		panic(err)
 	}

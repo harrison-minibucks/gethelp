@@ -32,7 +32,7 @@ init:
 
 ETHERBASE=0x929548598a3b93362c5aa2a24de190d18e657ae0
 run-geth:
-	geth --datadir ../geth-blockchain --keystore $(KEYSTORE_DIR) --mine --miner.etherbase $(ETHERBASE)
+	geth --datadir ../blockchain-data --keystore $(KEYSTORE_DIR) --mine --miner.etherbase $(ETHERBASE)
 
 run:
 	go run ./... -conf ./configs/config.yaml
