@@ -25,6 +25,18 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/helloworld.v1.HelloReply'
+    /suggest-gas:
+        get:
+            tags:
+                - Wallet
+            operationId: Wallet_SuggestGasPrice
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.GasPrice'
     /wallet/transaction:
         post:
             tags:
@@ -77,6 +89,11 @@ components:
                 balance:
                     type: string
                 pendingBalance:
+                    type: string
+        wallet.v1.GasPrice:
+            type: object
+            properties:
+                gas:
                     type: string
         wallet.v1.TxReply:
             type: object

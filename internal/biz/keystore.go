@@ -70,7 +70,7 @@ func (s *WalletUsecase) ReadBalance(accountAddress string) (*AccountBalance, err
 	return accBalance, nil
 }
 
-func (s *WalletUsecase) SendTransaction(sendTx *SendTransaction) error {
+func (s *WalletUsecase) SendTransaction(ctx context.Context, sendTx *SendTransaction) error {
 	account := accounts.Account{Address: common.HexToAddress(sendTx.SenderAccount)}
 	if !s.repo.HasAddress(sendTx.SenderAccount) {
 		fmt.Println("Account", sendTx.SenderAccount, "not found in keystore")
@@ -89,20 +89,20 @@ func (s *WalletUsecase) SendTransaction(sendTx *SendTransaction) error {
 		gasLimit = uint64(21000)
 	)
 
-	chainID, err := s.cl.ChainID(context.Background())
+	chainID, err := s.cl.ChainID(ctx)
 	if err != nil {
 		fmt.Println("Fail to retrieve chainid")
 		return err
 	}
 
-	nonce, err := s.cl.PendingNonceAt(context.Background(), account.Address)
+	nonce, err := s.cl.PendingNonceAt(ctx, account.Address)
 	if err != nil {
 		fmt.Println("Fail to retrieve nonce")
 		return err
 	}
 
-	tipCap, _ := s.cl.SuggestGasTipCap(context.Background())
-	feeCap, _ := s.cl.SuggestGasPrice(context.Background())
+	tipCap, _ := s.cl.SuggestGasTipCap(ctx)
+	feeCap, _ := s.cl.SuggestGasPrice(ctx)
 
 	tx := types.NewTx(
 		&types.DynamicFeeTx{
@@ -122,7 +122,17 @@ func (s *WalletUsecase) SendTransaction(sendTx *SendTransaction) error {
 		return err
 	}
 
-	return s.cl.SendTransaction(context.Background(), signedTx)
+	return s.cl.SendTransaction(ctx, signedTx)
+}
+
+func (s *WalletUsecase) SuggestGasPrice(ctx context.Context) (string, error) {
+	gas, err := s.cl.SuggestGasPrice(ctx)
+	if err != nil {
+		return "", err
+	}
+	// For testing purposes
+	// gas = big.NewInt(1000700000)
+	return formatEth(gas), nil
 }
 
 func formatEth(wei *big.Int) string {
@@ -132,16 +142,21 @@ func formatEth(wei *big.Int) string {
 	}
 	// Represent with Gwei if smaller than Ether
 	if wei.Cmp(big.NewInt(params.Ether)) == -1 {
-		return fmt.Sprintf("%d Gwei", wei)
+		return formatDecimalPoints(wei, params.GWei, 5) + " Gwei"
 	}
 	// Show up to 5 decimals in Ether
-	ether := new(big.Float).SetInt(wei)
-	ether.Quo(ether, big.NewFloat(params.Ether))
-	parts := strings.Split(ether.Text('f', 18), ".")
-	// Hide decimals if first 5 decimals are 0
-	if len(parts) < 2 || strings.HasPrefix(parts[1], strings.Repeat("0", 5)) {
-		return fmt.Sprintf("%s Ether", parts[0])
+	return formatDecimalPoints(wei, params.Ether, 5) + " Ether"
+}
+
+// Format up to a specific decimal place
+func formatDecimalPoints(n *big.Int, unit float64, places int) string {
+	number := new(big.Float).SetInt(n)
+	number.Quo(number, big.NewFloat(unit))
+	parts := strings.Split(number.Text('f', len(big.NewFloat(unit).String())), ".")
+	// Hide depending on the decimal place
+	if len(parts) < 2 || strings.HasPrefix(parts[1], strings.Repeat("0", places)) {
+		return parts[0]
 	} else {
-		return fmt.Sprintf("%s.%s Ether", parts[0], parts[1][:5])
+		return fmt.Sprintf("%s.%s", parts[0], parts[1][:5])
 	}
 }

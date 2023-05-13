@@ -26,7 +26,7 @@ func (s *WalletService) GetBalance(ctx context.Context, in *v1.BalanceRequest) (
 }
 
 func (s *WalletService) SendTransaction(ctx context.Context, in *v1.TxRequest) (*v1.TxReply, error) {
-	err := s.uc.SendTransaction(&biz.SendTransaction{
+	err := s.uc.SendTransaction(ctx, &biz.SendTransaction{
 		SenderAccount: in.SenderAccount,
 		Password:      in.Password,
 		Recipient:     in.RecipientAccount,
@@ -35,4 +35,12 @@ func (s *WalletService) SendTransaction(ctx context.Context, in *v1.TxRequest) (
 		return nil, err
 	}
 	return &v1.TxReply{Success: true}, nil
+}
+
+func (s *WalletService) SuggestGasPrice(ctx context.Context, in *v1.Empty) (*v1.GasPrice, error) {
+	gas, err := s.uc.SuggestGasPrice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &v1.GasPrice{Gas: gas}, nil
 }

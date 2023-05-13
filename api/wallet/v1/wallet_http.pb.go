@@ -21,16 +21,19 @@ const _ = http.SupportPackageIsVersion1
 
 const OperationWalletGetBalance = "/wallet.v1.Wallet/GetBalance"
 const OperationWalletSendTransaction = "/wallet.v1.Wallet/SendTransaction"
+const OperationWalletSuggestGasPrice = "/wallet.v1.Wallet/SuggestGasPrice"
 
 type WalletHTTPServer interface {
 	GetBalance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	SendTransaction(context.Context, *TxRequest) (*TxReply, error)
+	SuggestGasPrice(context.Context, *Empty) (*GasPrice, error)
 }
 
 func RegisterWalletHTTPServer(s *http.Server, srv WalletHTTPServer) {
 	r := s.Route("/")
 	r.GET("/wallet/{account}", _Wallet_GetBalance0_HTTP_Handler(srv))
 	r.POST("/wallet/transaction", _Wallet_SendTransaction0_HTTP_Handler(srv))
+	r.GET("/suggest-gas", _Wallet_SuggestGasPrice0_HTTP_Handler(srv))
 }
 
 func _Wallet_GetBalance0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
@@ -74,9 +77,29 @@ func _Wallet_SendTransaction0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.C
 	}
 }
 
+func _Wallet_SuggestGasPrice0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Empty
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWalletSuggestGasPrice)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.SuggestGasPrice(ctx, req.(*Empty))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*GasPrice)
+		return ctx.Result(200, reply)
+	}
+}
+
 type WalletHTTPClient interface {
 	GetBalance(ctx context.Context, req *BalanceRequest, opts ...http.CallOption) (rsp *BalanceReply, err error)
 	SendTransaction(ctx context.Context, req *TxRequest, opts ...http.CallOption) (rsp *TxReply, err error)
+	SuggestGasPrice(ctx context.Context, req *Empty, opts ...http.CallOption) (rsp *GasPrice, err error)
 }
 
 type WalletHTTPClientImpl struct {
@@ -107,6 +130,19 @@ func (c *WalletHTTPClientImpl) SendTransaction(ctx context.Context, in *TxReques
 	opts = append(opts, http.Operation(OperationWalletSendTransaction))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *WalletHTTPClientImpl) SuggestGasPrice(ctx context.Context, in *Empty, opts ...http.CallOption) (*GasPrice, error) {
+	var out GasPrice
+	pattern := "/suggest-gas"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationWalletSuggestGasPrice))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

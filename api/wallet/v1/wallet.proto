@@ -21,6 +21,15 @@ service Wallet {
       body: "*"
     };
   }
+  rpc SuggestGasPrice (Empty) returns (GasPrice) {
+    option (google.api.http) = {
+      get: "/suggest-gas"
+    };
+  }
+}
+
+message Empty {
+  
 }
 
 message BalanceRequest {
@@ -42,4 +51,8 @@ message TxRequest {
 message TxReply {
   bool success = 1;
   string message = 2;
+}
+
+message GasPrice {
+  string gas = 1;
 }

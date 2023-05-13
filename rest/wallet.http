@@ -13,3 +13,6 @@ Content-Type: application/json
     "password": "P@ssw0rd",
     "recipient_account": "0xb02A2EdA1b317FBd16760128836B0Ac59B560e91"
 }
+
+### Suggest Gas Price
+GET http://localhost:8000/suggest-gas HTTP/1.1

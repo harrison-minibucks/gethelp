@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Wallet_GetBalance_FullMethodName      = "/wallet.v1.Wallet/GetBalance"
 	Wallet_SendTransaction_FullMethodName = "/wallet.v1.Wallet/SendTransaction"
+	Wallet_SuggestGasPrice_FullMethodName = "/wallet.v1.Wallet/SuggestGasPrice"
 )
 
 // WalletClient is the client API for Wallet service.
@@ -29,6 +30,7 @@ const (
 type WalletClient interface {
 	GetBalance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceReply, error)
 	SendTransaction(ctx context.Context, in *TxRequest, opts ...grpc.CallOption) (*TxReply, error)
+	SuggestGasPrice(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GasPrice, error)
 }
 
 type walletClient struct {
@@ -57,12 +59,22 @@ func (c *walletClient) SendTransaction(ctx context.Context, in *TxRequest, opts 
 	return out, nil
 }
 
+func (c *walletClient) SuggestGasPrice(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GasPrice, error) {
+	out := new(GasPrice)
+	err := c.cc.Invoke(ctx, Wallet_SuggestGasPrice_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WalletServer is the server API for Wallet service.
 // All implementations must embed UnimplementedWalletServer
 // for forward compatibility
 type WalletServer interface {
 	GetBalance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	SendTransaction(context.Context, *TxRequest) (*TxReply, error)
+	SuggestGasPrice(context.Context, *Empty) (*GasPrice, error)
 	mustEmbedUnimplementedWalletServer()
 }
 
@@ -75,6 +87,9 @@ func (UnimplementedWalletServer) GetBalance(context.Context, *BalanceRequest) (*
 }
 func (UnimplementedWalletServer) SendTransaction(context.Context, *TxRequest) (*TxReply, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendTransaction not implemented")
+}
+func (UnimplementedWalletServer) SuggestGasPrice(context.Context, *Empty) (*GasPrice, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SuggestGasPrice not implemented")
 }
 func (UnimplementedWalletServer) mustEmbedUnimplementedWalletServer() {}
 
@@ -125,6 +140,24 @@ func _Wallet_SendTransaction_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Wallet_SuggestGasPrice_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).SuggestGasPrice(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Wallet_SuggestGasPrice_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).SuggestGasPrice(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Wallet_ServiceDesc is the grpc.ServiceDesc for Wallet service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -139,6 +172,10 @@ var Wallet_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendTransaction",
 			Handler:    _Wallet_SendTransaction_Handler,
+		},
+		{
+			MethodName: "SuggestGasPrice",
+			Handler:    _Wallet_SuggestGasPrice_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
