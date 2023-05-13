@@ -1,0 +1,23 @@
+{
+    "config": {
+      "chainId": 2023,
+      "homesteadBlock": 0,
+      "eip150Block": 0,
+      "eip155Block": 0,
+      "eip158Block": 0,
+      "byzantiumBlock": 0,
+      "constantinopleBlock": 0,
+      "petersburgBlock": 0,
+      "istanbulBlock": 0,
+      "berlinBlock": 0,
+      "londonBlock": 0,
+      "ethash": {}
+    },
+    "difficulty": "200",
+    "gasLimit": "800000000",
+    "alloc": {
+      "929548598a3b93362c5aa2a24de190d18e657ae0": {
+        "balance": "30000000000000000000000000"
+      }
+    }
+  }

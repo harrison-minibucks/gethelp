@@ -1,7 +1,7 @@
 # GETHELP
 This is a simple project (Built with Kratos) to demo some capabilities of Go Etherium and provide helpful insights.
 
-*Note*: This project is named as _geth-help_, not Get Help.
+**Note**: This project is named as _geth-help_, not Get Help.
 
 ## Tools Installation
 1. Install [golang](https://go.dev/dl/)
@@ -11,10 +11,10 @@ This is a simple project (Built with Kratos) to demo some capabilities of Go Eth
 
 ## Initial Setup
 1. Create a datadir folder for the eth node, e.g. `blockchain-data`, and `cd` into the folder
-2. Run `geth --datadir . --keystore %LocalAppData%\Ethereum\Keystore init ..\gethelp\geth\genesis.json`
+2. Run `geth --datadir ..\blockchain-data --keystore %LocalAppData%\Ethereum\Keystore init .\geth\genesis.json`
 3. Create a new account using `geth account new`, then enter your password
 4. Retrieve your account address using `geth account list`, example "929548598a3b93362c5aa2a24de190d18e657ae0"
-5. Start local eth node using `geth --datadir . --keystore %LocalAppData%\Ethereum\Keystore --mine --miner.etherbase "0x929548598a3b93362c5aa2a24de190d18e657ae0" --miner.threads 3`
+5. Start local eth node using `geth --datadir ..\blockchain-data --keystore %LocalAppData%\Ethereum\Keystore --mine --miner.etherbase "0x929548598a3b93362c5aa2a24de190d18e657ae0" --miner.threads 3`
    - **NOTE**: Your node will start mining immediately, use `geth attach` and `miner.stop()` to stop mining while keeping the node alive. 
 
 ### Reproduce Steps
