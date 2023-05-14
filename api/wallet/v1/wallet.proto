@@ -23,7 +23,24 @@ service Wallet {
   }
   rpc SuggestGasPrice (Empty) returns (GasPrice) {
     option (google.api.http) = {
-      get: "/suggest-gas"
+      get: "/gas/suggest"
+    };
+  }
+  rpc TxCost (TxCostRequest) returns (TxCostReply) {
+    option (google.api.http) = {
+      get: "/tx/cost/{tx_hash}"
+    };
+  }
+  rpc DepositWallet (Deposit) returns (DepositResult) {
+    option (google.api.http) = {
+      post: "/wallet/deposit",
+      body: "*"
+    };
+  }
+  rpc WithdrawWallet (Withdrawal) returns (WithdrawalResult) {
+    option (google.api.http) = {
+      post: "/wallet/withdraw",
+      body: "*"
     };
   }
 }
@@ -46,13 +63,48 @@ message TxRequest {
   string sender_account = 1;
   string password = 2;
   string recipient_account = 3;
+  string amount = 4; // big.Int is not directly supported
+}
+
+message TxCostRequest {
+  string tx_hash = 1;
+}
+
+message TxCostReply {
+  bool isPending = 1;
+  string tx_cost = 2;
 }
 
 message TxReply {
   bool success = 1;
   string message = 2;
+  string transaction_hash = 3;
 }
 
 message GasPrice {
   string gas = 1;
+}
+
+message Withdrawal {
+  string wallet_address = 1;
+  string password = 2;
+  string recipient_account = 3;
+}
+
+message Deposit {
+  string sender_account = 1;
+  string password = 2;
+  string wallet_address = 3;
+}
+
+message WithdrawalResult {
+  bool success = 1;
+  string message = 2;
+  string transaction_hash = 3;
+}
+
+message DepositResult {
+  bool success = 1;
+  string message = 2;
+  string transaction_hash = 3;
 }

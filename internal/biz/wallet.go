@@ -4,13 +4,12 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/harrison-minibucks/gethelp/internal/util"
 
 	"github.com/go-kratos/kratos/v2/log"
 )
@@ -35,14 +34,24 @@ type WalletUsecase struct {
 
 type AccountBalance struct {
 	Account        string
-	Balance        string
-	PendingBalance string
+	Balance        *big.Int
+	PendingBalance *big.Int
 }
 
 type SendTransaction struct {
 	SenderAccount string
 	Password      string
 	Recipient     string
+	Amount        *big.Int
+}
+
+type TxCost struct {
+	IsPending bool
+	TxCost    string
+}
+
+type TransactionResult struct {
+	TransactionHash string
 }
 
 func NewWalletUsecase(repo KeystoreRepo, logger log.Logger, cl *ethclient.Client) *WalletUsecase {
@@ -62,43 +71,44 @@ func (s *WalletUsecase) ReadBalance(accountAddress string) (*AccountBalance, err
 	}
 	accBalance := &AccountBalance{
 		Account: accountAddress,
-		Balance: formatEth(balance),
+		Balance: balance,
 	}
-	if balance.Cmp(pendingBalance) != 0 {
-		accBalance.PendingBalance = formatEth(pendingBalance)
-	}
+	accBalance.PendingBalance = pendingBalance
 	return accBalance, nil
 }
 
-func (s *WalletUsecase) SendTransaction(ctx context.Context, sendTx *SendTransaction) error {
+func (s *WalletUsecase) SendTransaction(ctx context.Context, sendTx *SendTransaction) (*TransactionResult, error) {
 	account := accounts.Account{Address: common.HexToAddress(sendTx.SenderAccount)}
 	if !s.repo.HasAddress(sendTx.SenderAccount) {
-		fmt.Println("Account", sendTx.SenderAccount, "not found in keystore")
-		return fmt.Errorf("account not found in keystore")
+		s.log.Error("Account ", sendTx.SenderAccount, " not found in keystore")
+		return nil, fmt.Errorf("account not found in keystore")
 	}
 
 	err := s.repo.Unlock(account, sendTx.Password)
 	if err != nil {
-		fmt.Println("Failed to unlock account")
-		return err
+		s.log.Error("Failed to unlock account")
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	var (
 		to       = common.HexToAddress(sendTx.Recipient)
-		value    = new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+		value    = sendTx.Amount
 		gasLimit = uint64(21000)
 	)
 
 	chainID, err := s.cl.ChainID(ctx)
 	if err != nil {
-		fmt.Println("Fail to retrieve chainid")
-		return err
+		s.log.Error("Fail to retrieve chainid")
+		return nil, err
 	}
 
 	nonce, err := s.cl.PendingNonceAt(ctx, account.Address)
 	if err != nil {
-		fmt.Println("Fail to retrieve nonce")
-		return err
+		s.log.Error("Fail to retrieve nonce")
+		return nil, err
 	}
 
 	tipCap, _ := s.cl.SuggestGasTipCap(ctx)
@@ -118,11 +128,55 @@ func (s *WalletUsecase) SendTransaction(ctx context.Context, sendTx *SendTransac
 
 	signedTx, err := s.repo.SignTransaction(account, tx, chainID)
 	if err != nil {
-		fmt.Println("Failed to sign transaction")
-		return err
+		s.log.Error("Failed to sign transaction")
+		return nil, err
 	}
+	if err := s.cl.SendTransaction(ctx, signedTx); err != nil {
+		return nil, err
+	} else {
+		return &TransactionResult{
+			TransactionHash: signedTx.Hash().Hex(),
+		}, nil
+	}
+}
 
-	return s.cl.SendTransaction(ctx, signedTx)
+func (s *WalletUsecase) TxCost(ctx context.Context, txHashStr string) (*TxCost, error) {
+	txHash := common.HexToHash(txHashStr)
+	_, isPending, err := s.cl.TransactionByHash(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+	if isPending {
+		return &TxCost{IsPending: true}, nil
+	}
+	if receipt, err := s.cl.TransactionReceipt(ctx, txHash); err != nil {
+		return nil, err
+	} else {
+		cost := new(big.Int).Mul(big.NewInt(int64(receipt.GasUsed)), receipt.EffectiveGasPrice)
+		return &TxCost{TxCost: util.FormatEth(cost)}, err
+	}
+}
+
+func (s *WalletUsecase) TransferAll(ctx context.Context, sendTx *SendTransaction) (*TransactionResult, error) {
+	tipCap, _ := s.cl.SuggestGasTipCap(ctx)
+	feeCap, _ := s.cl.SuggestGasPrice(ctx)
+	gasLimit := uint64(21000)
+	estimatedTxCost := new(big.Int)
+	if tipCap.Cmp(feeCap) > 0 {
+		estimatedTxCost.Mul(tipCap, big.NewInt(int64(gasLimit)))
+	} else {
+		estimatedTxCost.Mul(feeCap, big.NewInt(int64(gasLimit)))
+	}
+	accBalance, err := s.ReadBalance(sendTx.SenderAccount)
+	if err != nil {
+		return nil, err
+	}
+	return s.SendTransaction(ctx, &SendTransaction{
+		SenderAccount: sendTx.SenderAccount,
+		Password:      sendTx.Password,
+		Recipient:     sendTx.Recipient,
+		Amount:        new(big.Int).Sub(accBalance.PendingBalance, estimatedTxCost),
+	})
 }
 
 func (s *WalletUsecase) SuggestGasPrice(ctx context.Context) (string, error) {
@@ -130,33 +184,5 @@ func (s *WalletUsecase) SuggestGasPrice(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// For testing purposes
-	// gas = big.NewInt(1000700000)
-	return formatEth(gas), nil
-}
-
-func formatEth(wei *big.Int) string {
-	// Represent with Wei if smaller than Gwei
-	if wei.Cmp(big.NewInt(params.GWei)) == -1 {
-		return fmt.Sprintf("%d Wei", wei)
-	}
-	// Represent with Gwei if smaller than Ether
-	if wei.Cmp(big.NewInt(params.Ether)) == -1 {
-		return formatDecimalPoints(wei, params.GWei, 5) + " Gwei"
-	}
-	// Show up to 5 decimals in Ether
-	return formatDecimalPoints(wei, params.Ether, 5) + " Ether"
-}
-
-// Format up to a specific decimal place
-func formatDecimalPoints(n *big.Int, unit float64, places int) string {
-	number := new(big.Float).SetInt(n)
-	number.Quo(number, big.NewFloat(unit))
-	parts := strings.Split(number.Text('f', len(big.NewFloat(unit).String())), ".")
-	// Hide depending on the decimal place
-	if len(parts) < 2 || strings.HasPrefix(parts[1], strings.Repeat("0", places)) {
-		return parts[0]
-	} else {
-		return fmt.Sprintf("%s.%s", parts[0], parts[1][:5])
-	}
+	return util.FormatEth(gas), nil
 }

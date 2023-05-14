@@ -22,6 +22,9 @@ const (
 	Wallet_GetBalance_FullMethodName      = "/wallet.v1.Wallet/GetBalance"
 	Wallet_SendTransaction_FullMethodName = "/wallet.v1.Wallet/SendTransaction"
 	Wallet_SuggestGasPrice_FullMethodName = "/wallet.v1.Wallet/SuggestGasPrice"
+	Wallet_TxCost_FullMethodName          = "/wallet.v1.Wallet/TxCost"
+	Wallet_DepositWallet_FullMethodName   = "/wallet.v1.Wallet/DepositWallet"
+	Wallet_WithdrawWallet_FullMethodName  = "/wallet.v1.Wallet/WithdrawWallet"
 )
 
 // WalletClient is the client API for Wallet service.
@@ -31,6 +34,9 @@ type WalletClient interface {
 	GetBalance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceReply, error)
 	SendTransaction(ctx context.Context, in *TxRequest, opts ...grpc.CallOption) (*TxReply, error)
 	SuggestGasPrice(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GasPrice, error)
+	TxCost(ctx context.Context, in *TxCostRequest, opts ...grpc.CallOption) (*TxCostReply, error)
+	DepositWallet(ctx context.Context, in *Deposit, opts ...grpc.CallOption) (*DepositResult, error)
+	WithdrawWallet(ctx context.Context, in *Withdrawal, opts ...grpc.CallOption) (*WithdrawalResult, error)
 }
 
 type walletClient struct {
@@ -68,6 +74,33 @@ func (c *walletClient) SuggestGasPrice(ctx context.Context, in *Empty, opts ...g
 	return out, nil
 }
 
+func (c *walletClient) TxCost(ctx context.Context, in *TxCostRequest, opts ...grpc.CallOption) (*TxCostReply, error) {
+	out := new(TxCostReply)
+	err := c.cc.Invoke(ctx, Wallet_TxCost_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *walletClient) DepositWallet(ctx context.Context, in *Deposit, opts ...grpc.CallOption) (*DepositResult, error) {
+	out := new(DepositResult)
+	err := c.cc.Invoke(ctx, Wallet_DepositWallet_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *walletClient) WithdrawWallet(ctx context.Context, in *Withdrawal, opts ...grpc.CallOption) (*WithdrawalResult, error) {
+	out := new(WithdrawalResult)
+	err := c.cc.Invoke(ctx, Wallet_WithdrawWallet_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WalletServer is the server API for Wallet service.
 // All implementations must embed UnimplementedWalletServer
 // for forward compatibility
@@ -75,6 +108,9 @@ type WalletServer interface {
 	GetBalance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	SendTransaction(context.Context, *TxRequest) (*TxReply, error)
 	SuggestGasPrice(context.Context, *Empty) (*GasPrice, error)
+	TxCost(context.Context, *TxCostRequest) (*TxCostReply, error)
+	DepositWallet(context.Context, *Deposit) (*DepositResult, error)
+	WithdrawWallet(context.Context, *Withdrawal) (*WithdrawalResult, error)
 	mustEmbedUnimplementedWalletServer()
 }
 
@@ -90,6 +126,15 @@ func (UnimplementedWalletServer) SendTransaction(context.Context, *TxRequest) (*
 }
 func (UnimplementedWalletServer) SuggestGasPrice(context.Context, *Empty) (*GasPrice, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SuggestGasPrice not implemented")
+}
+func (UnimplementedWalletServer) TxCost(context.Context, *TxCostRequest) (*TxCostReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TxCost not implemented")
+}
+func (UnimplementedWalletServer) DepositWallet(context.Context, *Deposit) (*DepositResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DepositWallet not implemented")
+}
+func (UnimplementedWalletServer) WithdrawWallet(context.Context, *Withdrawal) (*WithdrawalResult, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WithdrawWallet not implemented")
 }
 func (UnimplementedWalletServer) mustEmbedUnimplementedWalletServer() {}
 
@@ -158,6 +203,60 @@ func _Wallet_SuggestGasPrice_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Wallet_TxCost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TxCostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).TxCost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Wallet_TxCost_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).TxCost(ctx, req.(*TxCostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Wallet_DepositWallet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Deposit)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).DepositWallet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Wallet_DepositWallet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).DepositWallet(ctx, req.(*Deposit))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Wallet_WithdrawWallet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Withdrawal)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WalletServer).WithdrawWallet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Wallet_WithdrawWallet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WalletServer).WithdrawWallet(ctx, req.(*Withdrawal))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Wallet_ServiceDesc is the grpc.ServiceDesc for Wallet service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -176,6 +275,18 @@ var Wallet_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SuggestGasPrice",
 			Handler:    _Wallet_SuggestGasPrice_Handler,
+		},
+		{
+			MethodName: "TxCost",
+			Handler:    _Wallet_TxCost_Handler,
+		},
+		{
+			MethodName: "DepositWallet",
+			Handler:    _Wallet_DepositWallet_Handler,
+		},
+		{
+			MethodName: "WithdrawWallet",
+			Handler:    _Wallet_WithdrawWallet_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

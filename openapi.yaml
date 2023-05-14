@@ -6,6 +6,18 @@ info:
     title: ""
     version: 0.0.1
 paths:
+    /gas/suggest:
+        get:
+            tags:
+                - Wallet
+            operationId: Wallet_SuggestGasPrice
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.GasPrice'
     /helloworld/{name}:
         get:
             tags:
@@ -25,18 +37,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/helloworld.v1.HelloReply'
-    /suggest-gas:
+    /tx/cost/{txHash}:
         get:
             tags:
                 - Wallet
-            operationId: Wallet_SuggestGasPrice
+            operationId: Wallet_TxCost
+            parameters:
+                - name: txHash
+                  in: path
+                  required: true
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/wallet.v1.GasPrice'
+                                $ref: '#/components/schemas/wallet.v1.TxCostReply'
+    /wallet/deposit:
+        post:
+            tags:
+                - Wallet
+            operationId: Wallet_DepositWallet
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/wallet.v1.Deposit'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.DepositResult'
     /wallet/transaction:
         post:
             tags:
@@ -55,6 +91,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/wallet.v1.TxReply'
+    /wallet/withdraw:
+        post:
+            tags:
+                - Wallet
+            operationId: Wallet_WithdrawWallet
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/wallet.v1.Withdrawal'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/wallet.v1.WithdrawalResult'
     /wallet/{account}:
         get:
             tags:
@@ -90,10 +144,35 @@ components:
                     type: string
                 pendingBalance:
                     type: string
+        wallet.v1.Deposit:
+            type: object
+            properties:
+                senderAccount:
+                    type: string
+                password:
+                    type: string
+                walletAddress:
+                    type: string
+        wallet.v1.DepositResult:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                transactionHash:
+                    type: string
         wallet.v1.GasPrice:
             type: object
             properties:
                 gas:
+                    type: string
+        wallet.v1.TxCostReply:
+            type: object
+            properties:
+                isPending:
+                    type: boolean
+                txCost:
                     type: string
         wallet.v1.TxReply:
             type: object
@@ -101,6 +180,8 @@ components:
                 success:
                     type: boolean
                 message:
+                    type: string
+                transactionHash:
                     type: string
         wallet.v1.TxRequest:
             type: object
@@ -110,6 +191,26 @@ components:
                 password:
                     type: string
                 recipientAccount:
+                    type: string
+                amount:
+                    type: string
+        wallet.v1.Withdrawal:
+            type: object
+            properties:
+                walletAddress:
+                    type: string
+                password:
+                    type: string
+                recipientAccount:
+                    type: string
+        wallet.v1.WithdrawalResult:
+            type: object
+            properties:
+                success:
+                    type: boolean
+                message:
+                    type: string
+                transactionHash:
                     type: string
 tags:
     - name: Greeter

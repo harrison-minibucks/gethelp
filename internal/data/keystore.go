@@ -2,7 +2,6 @@ package data
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"os"
 	"runtime"
@@ -37,7 +36,6 @@ func NewKeystoreRepo(conf *conf.Config) biz.KeystoreRepo {
 		}
 	}
 	ks := keystore.NewKeyStore(keystoreDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	fmt.Println(ks.Accounts())
 	return &keystoreRepo{ks: ks}
 }
 

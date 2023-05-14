@@ -19,21 +19,30 @@ var _ = binding.EncodeURL
 
 const _ = http.SupportPackageIsVersion1
 
+const OperationWalletDepositWallet = "/wallet.v1.Wallet/DepositWallet"
 const OperationWalletGetBalance = "/wallet.v1.Wallet/GetBalance"
 const OperationWalletSendTransaction = "/wallet.v1.Wallet/SendTransaction"
 const OperationWalletSuggestGasPrice = "/wallet.v1.Wallet/SuggestGasPrice"
+const OperationWalletTxCost = "/wallet.v1.Wallet/TxCost"
+const OperationWalletWithdrawWallet = "/wallet.v1.Wallet/WithdrawWallet"
 
 type WalletHTTPServer interface {
+	DepositWallet(context.Context, *Deposit) (*DepositResult, error)
 	GetBalance(context.Context, *BalanceRequest) (*BalanceReply, error)
 	SendTransaction(context.Context, *TxRequest) (*TxReply, error)
 	SuggestGasPrice(context.Context, *Empty) (*GasPrice, error)
+	TxCost(context.Context, *TxCostRequest) (*TxCostReply, error)
+	WithdrawWallet(context.Context, *Withdrawal) (*WithdrawalResult, error)
 }
 
 func RegisterWalletHTTPServer(s *http.Server, srv WalletHTTPServer) {
 	r := s.Route("/")
 	r.GET("/wallet/{account}", _Wallet_GetBalance0_HTTP_Handler(srv))
 	r.POST("/wallet/transaction", _Wallet_SendTransaction0_HTTP_Handler(srv))
-	r.GET("/suggest-gas", _Wallet_SuggestGasPrice0_HTTP_Handler(srv))
+	r.GET("/gas/suggest", _Wallet_SuggestGasPrice0_HTTP_Handler(srv))
+	r.GET("/tx/cost/{tx_hash}", _Wallet_TxCost0_HTTP_Handler(srv))
+	r.POST("/wallet/deposit", _Wallet_DepositWallet0_HTTP_Handler(srv))
+	r.POST("/wallet/withdraw", _Wallet_WithdrawWallet0_HTTP_Handler(srv))
 }
 
 func _Wallet_GetBalance0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
@@ -96,10 +105,73 @@ func _Wallet_SuggestGasPrice0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.C
 	}
 }
 
+func _Wallet_TxCost0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in TxCostRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWalletTxCost)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.TxCost(ctx, req.(*TxCostRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*TxCostReply)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Wallet_DepositWallet0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Deposit
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWalletDepositWallet)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DepositWallet(ctx, req.(*Deposit))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*DepositResult)
+		return ctx.Result(200, reply)
+	}
+}
+
+func _Wallet_WithdrawWallet0_HTTP_Handler(srv WalletHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in Withdrawal
+		if err := ctx.Bind(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWalletWithdrawWallet)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.WithdrawWallet(ctx, req.(*Withdrawal))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*WithdrawalResult)
+		return ctx.Result(200, reply)
+	}
+}
+
 type WalletHTTPClient interface {
+	DepositWallet(ctx context.Context, req *Deposit, opts ...http.CallOption) (rsp *DepositResult, err error)
 	GetBalance(ctx context.Context, req *BalanceRequest, opts ...http.CallOption) (rsp *BalanceReply, err error)
 	SendTransaction(ctx context.Context, req *TxRequest, opts ...http.CallOption) (rsp *TxReply, err error)
 	SuggestGasPrice(ctx context.Context, req *Empty, opts ...http.CallOption) (rsp *GasPrice, err error)
+	TxCost(ctx context.Context, req *TxCostRequest, opts ...http.CallOption) (rsp *TxCostReply, err error)
+	WithdrawWallet(ctx context.Context, req *Withdrawal, opts ...http.CallOption) (rsp *WithdrawalResult, err error)
 }
 
 type WalletHTTPClientImpl struct {
@@ -108,6 +180,19 @@ type WalletHTTPClientImpl struct {
 
 func NewWalletHTTPClient(client *http.Client) WalletHTTPClient {
 	return &WalletHTTPClientImpl{client}
+}
+
+func (c *WalletHTTPClientImpl) DepositWallet(ctx context.Context, in *Deposit, opts ...http.CallOption) (*DepositResult, error) {
+	var out DepositResult
+	pattern := "/wallet/deposit"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationWalletDepositWallet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
 }
 
 func (c *WalletHTTPClientImpl) GetBalance(ctx context.Context, in *BalanceRequest, opts ...http.CallOption) (*BalanceReply, error) {
@@ -138,11 +223,37 @@ func (c *WalletHTTPClientImpl) SendTransaction(ctx context.Context, in *TxReques
 
 func (c *WalletHTTPClientImpl) SuggestGasPrice(ctx context.Context, in *Empty, opts ...http.CallOption) (*GasPrice, error) {
 	var out GasPrice
-	pattern := "/suggest-gas"
+	pattern := "/gas/suggest"
 	path := binding.EncodeURL(pattern, in, true)
 	opts = append(opts, http.Operation(OperationWalletSuggestGasPrice))
 	opts = append(opts, http.PathTemplate(pattern))
 	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *WalletHTTPClientImpl) TxCost(ctx context.Context, in *TxCostRequest, opts ...http.CallOption) (*TxCostReply, error) {
+	var out TxCostReply
+	pattern := "/tx/cost/{tx_hash}"
+	path := binding.EncodeURL(pattern, in, true)
+	opts = append(opts, http.Operation(OperationWalletTxCost))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "GET", path, nil, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, err
+}
+
+func (c *WalletHTTPClientImpl) WithdrawWallet(ctx context.Context, in *Withdrawal, opts ...http.CallOption) (*WithdrawalResult, error) {
+	var out WithdrawalResult
+	pattern := "/wallet/withdraw"
+	path := binding.EncodeURL(pattern, in, false)
+	opts = append(opts, http.Operation(OperationWalletWithdrawWallet))
+	opts = append(opts, http.PathTemplate(pattern))
+	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

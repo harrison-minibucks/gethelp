@@ -39,13 +39,14 @@ docker run --rm -p 8000:8000 -p 9000:9000 -v </path/to/your/configs>:/data/conf 
 - [x] Perform transactions on the node
   - [x] Send eth
   - [ ] Validate recipient (Stretch goal)
-- [ ] Withdraw money into cold wallet
+- [x] Deposit money into wallet
+  - [x] Withdraw money from wallet
   - [ ] Make a HD Wallet (Stretch goal)
 - [x] Simple REST API
   - [x] GET Account balance (+Pending Balance)
     - [x] Format output
-  - [ ] GET Gas price
-  - [ ] GET Transaction verification
+  - [x] GET Gas price
+  - [x] GET Transaction verification
   - [ ] Implement challenge for client (Stretch goal)
 - [ ] Create & Deploy Smart Contract (Stretch goal)
 

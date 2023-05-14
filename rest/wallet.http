@@ -11,8 +11,32 @@ Content-Type: application/json
 {
     "sender_account": "0x929548598a3b93362c5aa2a24de190d18e657ae0",
     "password": "P@ssw0rd",
-    "recipient_account": "0xb02A2EdA1b317FBd16760128836B0Ac59B560e91"
+    "recipient_account": "0xb02A2EdA1b317FBd16760128836B0Ac59B560e91",
+    "amount": "1 eth"
 }
 
 ### Suggest Gas Price
-GET http://localhost:8000/suggest-gas HTTP/1.1
+GET http://localhost:8000/gas/suggest HTTP/1.1
+
+### Tx Cost
+GET http://localhost:8000/tx/cost/0x333ceb47c69e1f7b689df5de4668e6044cd658965668850a2e4adac74e5b2620 HTTP/1.1
+
+### Deposit to wallet (All ether)
+POST http://localhost:8000/wallet/deposit HTTP/1.1
+Content-Type: application/json
+
+{
+    "sender_account": "0x929548598a3b93362c5aa2a24de190d18e657ae0",
+    "password": "P@ssw0rd",
+    "wallet_address": "0xD85C08626a1f9979444A82D3bd8b916497627292"
+}
+
+### Withdraw from wallet (All ether)
+POST http://localhost:8000/wallet/withdraw HTTP/1.1
+Content-Type: application/json
+
+{
+    "wallet_address": "0xD85C08626a1f9979444A82D3bd8b916497627292",
+    "password": "W@ll3t",
+    "recipient_account": "0x929548598a3b93362c5aa2a24de190d18e657ae0"
+}
